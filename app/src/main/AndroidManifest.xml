@@ -47,7 +47,7 @@
         </service>
 
         <service
-            android:name=".service.ImageWallpaperService"
+            android:name=".service.MuzeiWallpaperService"
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.BIND_WALLPAPER">

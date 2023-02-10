@@ -16,11 +16,14 @@
 
 package com.ohayo.livewallpaper.render
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import com.ohayo.livewallpaper.util.Prefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,7 +34,8 @@ object ReloadDespiteInvisible : ReloadType()
 object ReloadImmediate : ReloadType()
 
 abstract class RenderController(
-    protected var renderer: BlurRenderer,
+    protected var context: Context,
+    protected var renderer: MuzeiBlurRenderer,
     private var callbacks: Callbacks
 ) : DefaultLifecycleObserver {
 
@@ -53,6 +57,12 @@ abstract class RenderController(
         set(value) {
             if (field != value) {
                 field = value
+                renderer.recomputeMaxPrescaledBlurPixels(
+                        if (value) Prefs.PREF_LOCK_BLUR_AMOUNT else Prefs.PREF_BLUR_AMOUNT)
+                renderer.recomputeMaxDimAmount(
+                        if (value) Prefs.PREF_LOCK_DIM_AMOUNT else Prefs.PREF_DIM_AMOUNT)
+                renderer.recomputeGreyAmount(
+                        if (value) Prefs.PREF_LOCK_GREY_AMOUNT else Prefs.PREF_GREY_AMOUNT)
                 // Switch immediately if we're transitioning to the lock screen
                 reloadCurrentArtwork(if (value) ReloadImmediate else ReloadDespiteInvisible)
             }
@@ -60,6 +70,39 @@ abstract class RenderController(
     private lateinit var coroutineScope: CoroutineScope
     private var destroyed = false
     private var queuedImageLoader: ImageLoader? = null
+    private val sharedPreferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (onLockScreen) {
+            when (key) {
+                Prefs.PREF_LOCK_BLUR_AMOUNT -> {
+                    renderer.recomputeMaxPrescaledBlurPixels()
+                    throttledForceReloadCurrentArtwork()
+                }
+                Prefs.PREF_LOCK_DIM_AMOUNT -> {
+                    renderer.recomputeMaxDimAmount()
+                    throttledForceReloadCurrentArtwork()
+                }
+                Prefs.PREF_LOCK_GREY_AMOUNT -> {
+                    renderer.recomputeGreyAmount()
+                    throttledForceReloadCurrentArtwork()
+                }
+            }
+        } else {
+            when (key) {
+                Prefs.PREF_BLUR_AMOUNT -> {
+                    renderer.recomputeMaxPrescaledBlurPixels()
+                    throttledForceReloadCurrentArtwork()
+                }
+                Prefs.PREF_DIM_AMOUNT -> {
+                    renderer.recomputeMaxDimAmount()
+                    throttledForceReloadCurrentArtwork()
+                }
+                Prefs.PREF_GREY_AMOUNT -> {
+                    renderer.recomputeGreyAmount()
+                    throttledForceReloadCurrentArtwork()
+                }
+            }
+        }
+    }
 
     private val throttledForceReloadHandler by lazy {
         Handler(Looper.getMainLooper()) {
@@ -70,11 +113,20 @@ abstract class RenderController(
 
     override fun onCreate(owner: LifecycleOwner) {
         coroutineScope = owner.lifecycleScope
+        Prefs.getSharedPreferences(context)
+                .registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
         queuedImageLoader = null
+        Prefs.getSharedPreferences(context)
+                .unregisterOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
         destroyed = true
+    }
+
+    private fun throttledForceReloadCurrentArtwork() {
+        throttledForceReloadHandler.removeMessages(0)
+        throttledForceReloadHandler.sendEmptyMessageDelayed(0, 250)
     }
 
     protected abstract suspend fun openDownloadedCurrentArtwork(): ImageLoader
@@ -89,10 +141,8 @@ abstract class RenderController(
 
             callbacks.queueEventOnGlThread {
                 if (visible || reloadType != ReloadWhenVisible) {
-                    renderer.setAndConsumeImageLoader(
-                        imageLoader,
-                        reloadType == ReloadImmediate || !visible
-                    )
+                    renderer.setAndConsumeImageLoader(imageLoader,
+                    reloadType == ReloadImmediate || !visible)
                 } else {
                     queuedImageLoader = imageLoader
                 }

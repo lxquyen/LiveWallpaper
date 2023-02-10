@@ -6,7 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import com.ohayo.livewallpaper.service.ImageWallpaperService
+import com.ohayo.livewallpaper.service.MuzeiWallpaperService
 import com.ohayo.livewallpaper.service.VideoWallpaperService
 
 class MainActivity : AppCompatActivity() {
@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
                 .apply {
                     putExtra(
                         WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                        ComponentName(this@MainActivity, ImageWallpaperService::class.java)
+                        ComponentName(this@MainActivity, MuzeiWallpaperService::class.java)
                     )
                 }
             startActivity(intent)

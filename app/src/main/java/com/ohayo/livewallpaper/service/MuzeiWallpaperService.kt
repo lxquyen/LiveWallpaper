@@ -284,17 +284,17 @@ class MuzeiWallpaperService : GLWallpaperService(), LifecycleOwner {
         }
 
         private fun delayedBlur() {
-            if (renderer.isBlurred) {
-                return
-            }
-
-            cancelDelayedBlur()
-            delayedBlur = lifecycleScope.launch {
-                delay(TEMPORARY_FOCUS_DURATION_MILLIS)
-                queueEvent {
-                    renderer.setIsBlurred(isBlurred = true, artDetailMode = false)
-                }
-            }
+//            if (renderer.isBlurred) {
+//                return
+//            }
+//
+//            cancelDelayedBlur()
+//            delayedBlur = lifecycleScope.launch {
+//                delay(TEMPORARY_FOCUS_DURATION_MILLIS)
+//                queueEvent {
+//                    renderer.setIsBlurred(isBlurred = true, artDetailMode = false)
+//                }
+//            }
         }
 
         override fun requestRender() {

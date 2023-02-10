@@ -81,5 +81,9 @@ class DemoRenderController(
     }
 
     override suspend fun openDownloadedCurrentArtwork() =
-            AssetImageLoader(context.assets, "starrynight.jpg")
+            AssetImageLoader(context.assets, "demo-image-04.jpg")
+
+    override fun prepareReloadCurrentArtwork() {
+
+    }
 }

@@ -58,12 +58,16 @@ abstract class RenderController(
             if (field != value) {
                 field = value
                 renderer.recomputeMaxPrescaledBlurPixels(
-                        if (value) Prefs.PREF_LOCK_BLUR_AMOUNT else Prefs.PREF_BLUR_AMOUNT)
+                    if (value) Prefs.PREF_LOCK_BLUR_AMOUNT else Prefs.PREF_BLUR_AMOUNT
+                )
                 renderer.recomputeMaxDimAmount(
-                        if (value) Prefs.PREF_LOCK_DIM_AMOUNT else Prefs.PREF_DIM_AMOUNT)
+                    if (value) Prefs.PREF_LOCK_DIM_AMOUNT else Prefs.PREF_DIM_AMOUNT
+                )
                 renderer.recomputeGreyAmount(
-                        if (value) Prefs.PREF_LOCK_GREY_AMOUNT else Prefs.PREF_GREY_AMOUNT)
+                    if (value) Prefs.PREF_LOCK_GREY_AMOUNT else Prefs.PREF_GREY_AMOUNT
+                )
                 // Switch immediately if we're transitioning to the lock screen
+                prepareReloadCurrentArtwork()
                 reloadCurrentArtwork(if (value) ReloadImmediate else ReloadDespiteInvisible)
             }
         }
@@ -114,13 +118,13 @@ abstract class RenderController(
     override fun onCreate(owner: LifecycleOwner) {
         coroutineScope = owner.lifecycleScope
         Prefs.getSharedPreferences(context)
-                .registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
+            .registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
         queuedImageLoader = null
         Prefs.getSharedPreferences(context)
-                .unregisterOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
+            .unregisterOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
         destroyed = true
     }
 
@@ -130,6 +134,7 @@ abstract class RenderController(
     }
 
     protected abstract suspend fun openDownloadedCurrentArtwork(): ImageLoader
+    protected abstract fun prepareReloadCurrentArtwork()
 
     fun reloadCurrentArtwork(reloadType: ReloadType = ReloadWhenVisible) {
         if (destroyed) {
@@ -141,8 +146,10 @@ abstract class RenderController(
 
             callbacks.queueEventOnGlThread {
                 if (visible || reloadType != ReloadWhenVisible) {
-                    renderer.setAndConsumeImageLoader(imageLoader,
-                    reloadType == ReloadImmediate || !visible)
+                    renderer.setAndConsumeImageLoader(
+                        imageLoader,
+                        reloadType == ReloadImmediate || !visible
+                    )
                 } else {
                     queuedImageLoader = imageLoader
                 }

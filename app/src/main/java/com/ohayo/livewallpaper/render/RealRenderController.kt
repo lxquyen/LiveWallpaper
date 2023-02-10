@@ -18,6 +18,7 @@ package com.ohayo.livewallpaper.render
 
 import android.content.Context
 import androidx.lifecycle.LifecycleOwner
+import com.ohayo.livewallpaper.Utils
 
 class RealRenderController(
     context: Context,
@@ -25,11 +26,29 @@ class RealRenderController(
     callbacks: Callbacks
 ) : RenderController(context, renderer, callbacks) {
 
+    private val images = listOf(
+        "demo-image-01.jpg",
+        "demo-image-02.jpg",
+        "demo-image-03.jpg",
+        "demo-image-04.jpg",
+        "demo-image-05.jpg"
+    )
+
+    private var index = 0
+
     override fun onCreate(owner: LifecycleOwner) {
         super.onCreate(owner)
         reloadCurrentArtwork()
+        renderer.setIsBlurred(isBlurred = false, artDetailMode = false)
     }
 
-    override suspend fun openDownloadedCurrentArtwork() =
-        AssetImageLoader(context.assets, "starrynight.jpg")
+    override suspend fun openDownloadedCurrentArtwork(): ImageLoader {
+        val loader = AssetImageLoader(context.assets, images[index])
+        Utils.logD("RealRenderController", "index = $index")
+        return loader
+    }
+
+    override fun prepareReloadCurrentArtwork() {
+        index = (++index) % images.size
+    }
 }
